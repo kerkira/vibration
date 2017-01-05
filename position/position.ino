@@ -1,5 +1,5 @@
 
-
+// NOTE THIS IS NOWHERE NEAR DONE --- needs a LOT of work 
 
 
 
@@ -14,7 +14,7 @@
 #include <DueTimer.h>
 #include <ExtendedADCShield.h>
 #include <SD.h>
-
+ 
 
 //Initialize the ADC Shield with default pins and 16-bit ADC (LTC1859)
 ExtendedADCShield extendedADCShield(16);
@@ -26,26 +26,38 @@ unsigned long acquisitionTimeMicros;
 char SerialChar;
 unsigned long loopTime = 2000; //microseconds. This variable sets the loop's execution rate.
 int loopCounter = 0;
-double freq;
+double t;
 double arg;
 int AnalogDACSetting;
-
+double f;
+double fc;
+double aveConst = 0;
+double xPosition = 0;
+double increment = 0;
+double filteredX = 0;
+double runningMean = 0;
+double timestep = 0;
+double meanSubtracted;
 
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
-  //SPI.begin must be called here on Due only
-  SPI.begin();
-  
+  SPI.begin();  //SPI.begin must be called here on Due only
 
+  timestep = loopTime*0.000001;
+  
+  // initialize board
   adcAcc = extendedADCShield.analogReadConfigNext( 0, SINGLE_ENDED, BIPOLAR, RANGE10V);
   adcVel = extendedADCShield.analogReadConfigNext( 1, SINGLE_ENDED, BIPOLAR, RANGE10V);
   Serial.print(adcAcc);
+
+  // not sure why this is here -- ask Charlie
   while(Serial.available() > 0){
     SerialChar = Serial.read();
   }
 
+  
   //Absolute timer interrupt initialization
   Timer3.attachInterrupt(OneCycle);
   Timer3.start(loopTime);
@@ -67,23 +79,44 @@ void loop() {
 void OneCycle() {
   // Acquire Signals
 
+  timestamp();
+  t = loopCounter*timestep; // time in seconds
+  Serial.print(t);
+  Serial.print("\t");
+
+
+  // Euler method - numerical integrator
+  increment = adcVel * timestep;
+  xPosition += increment;
+
+  //running filter
+  filteredX = filteredX*aveConst + increment;
+
+  //continuous mean subtraction
+  runningMean = runningMean * aveConst + (1-aveConst) * xPosition;
+  meanSubtracted = xPosition - runningMean;
+
+  //To do: 
+  //   implement low-pass filter at ~100hz
+  //   compute proportional output
+  
+
+
+  // read off the acceleration and velocity of the seismometer
   adcAcc = extendedADCShield.analogReadConfigNext( 1, SINGLE_ENDED, BIPOLAR, RANGE10V);
   Serial.print(adcAcc);
   Serial.print("\t");
   adcVel = extendedADCShield.analogReadConfigNext( 0, SINGLE_ENDED, BIPOLAR, RANGE10V);
   Serial.print(adcVel);
   
-  timestamp();
-  freq = loopCounter/500.;
-  //Serial.print(freq);
-  Serial.print("\t");
   
-  arg = 5*sin(150*2*PI*freq);
+  
+  arg = 5*sin(150*2*PI*t);
   AnalogDACSetting = (int) ( arg/5.0 * 32768.0 + 32768);
-  //analog.write( 0, AnalogDACSetting  );
-  //analog.write( 1, AnalogDACSetting );
-  //analog.write( 2, AnalogDACSetting );
-  //Serial.print(arg);
+  analog.write( 0, AnalogDACSetting  );
+  analog.write( 1, AnalogDACSetting );
+  analog.write( 2, AnalogDACSetting );
+
   loopCounter++;
 
   Serial.print("\n");
