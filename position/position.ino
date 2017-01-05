@@ -81,7 +81,7 @@ void OneCycle() {
 
   timestamp();
   t = loopCounter*timestep; // time in seconds
-  Serial.print(t);
+  Serial.print(t,4);
   Serial.print("\t");
 
 
@@ -110,7 +110,7 @@ void OneCycle() {
   Serial.print(adcVel);
   
   
-  
+  // write values to the piezos
   arg = 5*sin(150*2*PI*t);
   AnalogDACSetting = (int) ( arg/5.0 * 32768.0 + 32768);
   analog.write( 0, AnalogDACSetting  );
