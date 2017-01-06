@@ -18,7 +18,7 @@ omega = 2 * pi * f; %angular frequency
 
 %Create some time
 t = 0:timestep:1000;
-t = t'; %Charlie works in columnar data
+t = t//'; %Charlie works in columnar data
 
 %Generate position trace
 x = A * cos( omega * t);

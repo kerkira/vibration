@@ -30,7 +30,7 @@ double t;
 double arg;
 int AnalogDACSetting;
 double f;
-double fc;
+double fc = 1; // high pass filter time constant
 double aveConst = 0;
 double xPosition = 0;
 double increment = 0;
@@ -45,7 +45,7 @@ void setup() {
   Serial.begin(115200);
   SPI.begin();  //SPI.begin must be called here on Due only
 
-  timestep = loopTime*0.000001;
+  timestep = loopTime*1e-6;
   
   // initialize board
   adcAcc = extendedADCShield.analogReadConfigNext( 0, SINGLE_ENDED, BIPOLAR, RANGE10V);
@@ -56,7 +56,7 @@ void setup() {
   while(Serial.available() > 0){
     SerialChar = Serial.read();
   }
-
+  aveConst = exp(-2 * PI * fc * timestep);
   
   //Absolute timer interrupt initialization
   Timer3.attachInterrupt(OneCycle);
@@ -100,6 +100,10 @@ void OneCycle() {
   //   implement low-pass filter at ~100hz
   //   compute proportional output
   
+
+  // Proportional output
+  
+
 
 
   // read off the acceleration and velocity of the seismometer
