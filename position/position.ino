@@ -30,7 +30,7 @@ double t;
 double arg;
 int AnalogDACSetting;
 double f;
-double fc = 1; // high pass filter time constant
+double fc = 1;
 double aveConst = 0;
 double xPosition = 0;
 double increment = 0;
@@ -38,6 +38,7 @@ double filteredX = 0;
 double runningMean = 0;
 double timestep = 0;
 double meanSubtracted;
+double k = 10;
 
 
 void setup() {
@@ -50,13 +51,16 @@ void setup() {
   // initialize board
   adcAcc = extendedADCShield.analogReadConfigNext( 0, SINGLE_ENDED, BIPOLAR, RANGE10V);
   adcVel = extendedADCShield.analogReadConfigNext( 1, SINGLE_ENDED, BIPOLAR, RANGE10V);
-  Serial.print(adcAcc);
+  //Serial.print(adcAcc);
 
   // not sure why this is here -- ask Charlie
   while(Serial.available() > 0){
     SerialChar = Serial.read();
   }
+
   aveConst = exp(-2 * PI * fc * timestep);
+  //Serial.print("aveConst");
+  //Serial.print(aveConst,5);
   
   //Absolute timer interrupt initialization
   Timer3.attachInterrupt(OneCycle);
@@ -81,8 +85,8 @@ void OneCycle() {
 
   timestamp();
   t = loopCounter*timestep; // time in seconds
-  Serial.print(t,4);
-  Serial.print("\t");
+  //Serial.print(t,4);
+  //Serial.print("\t");
 
 
   // Euler method - numerical integrator
@@ -94,28 +98,26 @@ void OneCycle() {
 
   //continuous mean subtraction
   runningMean = runningMean * aveConst + (1-aveConst) * xPosition;
-  meanSubtracted = xPosition - runningMean;
+  xPosition = xPosition - runningMean;
+  Serial.print(xPosition*10, 4);
+  Serial.print("\t");
 
   //To do: 
   //   implement low-pass filter at ~100hz
   //   compute proportional output
   
 
-  // Proportional output
-  
-
-
 
   // read off the acceleration and velocity of the seismometer
   adcAcc = extendedADCShield.analogReadConfigNext( 1, SINGLE_ENDED, BIPOLAR, RANGE10V);
-  Serial.print(adcAcc);
-  Serial.print("\t");
+  //Serial.print(adcAcc);
+  //Serial.print("\t");
   adcVel = extendedADCShield.analogReadConfigNext( 0, SINGLE_ENDED, BIPOLAR, RANGE10V);
-  Serial.print(adcVel);
+  Serial.print(adcVel*10,4);
   
-  
+  arg = -k*xPosition;
   // write values to the piezos
-  arg = 5*sin(150*2*PI*t);
+  //arg = 5*sin(90*2*PI*t);
   AnalogDACSetting = (int) ( arg/5.0 * 32768.0 + 32768);
   analog.write( 0, AnalogDACSetting  );
   analog.write( 1, AnalogDACSetting );
@@ -138,3 +140,5 @@ void timestamp(){
   //loopTime = loopMicroTime - oldLoopMicroTime;
   //oldLoopMicroTime = loopMicroTime;
 }
+
+
