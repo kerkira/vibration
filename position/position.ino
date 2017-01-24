@@ -38,7 +38,7 @@ double filteredX = 0;
 double runningMean = 0;
 double timestep = 0;
 double meanSubtracted;
-double k = 10;
+double k = 500;
 
 
 void setup() {
@@ -47,7 +47,10 @@ void setup() {
   SPI.begin();  //SPI.begin must be called here on Due only
 
   timestep = loopTime*1e-6;
-  
+  Serial.print("Position");
+  Serial.print("\t");
+  Serial.print("Velocity");
+  Serial.print("\t");
   // initialize board
   adcAcc = extendedADCShield.analogReadConfigNext( 0, SINGLE_ENDED, BIPOLAR, RANGE10V);
   adcVel = extendedADCShield.analogReadConfigNext( 1, SINGLE_ENDED, BIPOLAR, RANGE10V);
@@ -92,6 +95,8 @@ void OneCycle() {
   // Euler method - numerical integrator
   increment = adcVel * timestep;
   xPosition += increment;
+  //Serial.print(increment*1000,4);
+  //Serial.print("\t");
 
   //running filter
   filteredX = filteredX*aveConst + increment;
@@ -99,8 +104,8 @@ void OneCycle() {
   //continuous mean subtraction
   runningMean = runningMean * aveConst + (1-aveConst) * xPosition;
   xPosition = xPosition - runningMean;
-  Serial.print(xPosition*10, 4);
-  Serial.print("\t");
+  //Serial.print(xPosition*1000, 3);
+  //Serial.print("\t");
 
   //To do: 
   //   implement low-pass filter at ~100hz
@@ -113,12 +118,16 @@ void OneCycle() {
   //Serial.print(adcAcc);
   //Serial.print("\t");
   adcVel = extendedADCShield.analogReadConfigNext( 0, SINGLE_ENDED, BIPOLAR, RANGE10V);
-  Serial.print(adcVel*10,4);
+  Serial.print(adcVel*100,3);
+  Serial.print("\t");
   
   arg = -k*xPosition;
+  Serial.print(arg, 3);
+  //Serial.print("\t");
   // write values to the piezos
   //arg = 5*sin(90*2*PI*t);
-  AnalogDACSetting = (int) ( arg/5.0 * 32768.0 + 32768);
+  //arg = 0;
+  AnalogDACSetting = (int) ( arg*5.0 * 32768.0 + 32768);
   analog.write( 0, AnalogDACSetting  );
   analog.write( 1, AnalogDACSetting );
   analog.write( 2, AnalogDACSetting );
